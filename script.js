@@ -38,6 +38,56 @@ const prevBtn = document.getElementById("prev");
 const nextBtn = document.getElementById("next");
 const speakingIndicator = document.getElementById("speakingIndicator");
 const jsonFileSelect = document.getElementById("jsonFileSelect");
+
+function cleanSpeechText(text) {
+  return String(text || "")
+    .replace(/<br\s*\/?>/gi, " ")
+    .replace(/<\/?[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function detectLanguage(text) {
+  const cleaned = cleanSpeechText(text);
+  if (!cleaned) return "en-US";
+
+  const arabicChars = (cleaned.match(/[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF]/g) || []).length;
+  const englishChars = (cleaned.match(/[A-Za-z]/g) || []).length;
+
+  if (arabicChars > 0 && englishChars === 0) return "ar-SA";
+  if (englishChars > 0 && arabicChars === 0) return "en-US";
+  return arabicChars >= englishChars ? "ar-SA" : "en-US";
+}
+
+function stopSpeakingState() {
+  isSpeaking = false;
+  updateSpeakingUI();
+}
+
+function speakText(text, language) {
+  const cleanedText = cleanSpeechText(text);
+  if (!cleanedText) {
+    stopSpeakingState();
+    return;
+  }
+
+  speechSynthesis.cancel();
+  stopSpeakingState();
+
+  const speech = new SpeechSynthesisUtterance(cleanedText);
+  speech.lang = language || detectLanguage(cleanedText);
+  speech.rate = 0.9;
+
+  speech.onstart = function () {
+    isSpeaking = true;
+    updateSpeakingUI();
+  };
+  speech.onend = stopSpeakingState;
+  speech.onerror = stopSpeakingState;
+
+  speechSynthesis.speak(speech);
+}
+
 async function loadData(fileName) {
   console.log("Loading JSON file:", fileName, "Page URL:", location.href);
   try {
@@ -50,7 +100,7 @@ async function loadData(fileName) {
       );
     }
     const data = await response.json();
-    console.log("Loaded JSON object. Top-level keys:", Object.keys(data || {}));    
+    console.log("Loaded JSON object. Top-level keys:", Object.keys(data || {}));
     if (data && data.title) {
       document.title = data.title;
       const titleEl = document.getElementById("lessonTitle");
@@ -69,16 +119,17 @@ async function loadData(fileName) {
     alert("Failed to load lesson data. See console for details.\n\n" + error.message);
   }
 }
+
 jsonFileSelect.addEventListener("change", function () {
-  if (this.value) {  
+  if (this.value) {
     speechSynthesis.cancel();
-    isSpeaking = false;
-    updateSpeakingUI();   
+    stopSpeakingState();
     usePlayListCheckbox.checked = false;
-    playList.value = "";  
+    playList.value = "";
     loadData(this.value);
   }
 });
+
 function scrambleWords(text) {
   const words = text.split(" ");
   for (let i = words.length - 1; i > 0; i--) {
@@ -87,6 +138,7 @@ function scrambleWords(text) {
   }
   return words.join(" ");
 }
+
 function toggleScramble() {
   const englishText = english.textContent.trim();
   if (!englishText) return;
@@ -102,7 +154,9 @@ function toggleScramble() {
     speakScrambledCheckbox.checked = false;
   }
 }
+
 scrambleCheckbox.addEventListener("change", toggleScramble);
+
 function speakScrambledWithPauses() {
   const scrambledTextContent = document.getElementById("scrambledText").textContent.trim();
   if (!scrambledTextContent) {
@@ -110,42 +164,50 @@ function speakScrambledWithPauses() {
     speakScrambledCheckbox.checked = false;
     return;
   }
+
   const words = scrambledTextContent.split(" ");
   let wordIndex = 0;
+  let sequenceCancelled = false;
+
   function speakNextWord() {
-    if (wordIndex >= words.length) {
-      isSpeaking = false;
-      updateSpeakingUI();
+    if (sequenceCancelled || wordIndex >= words.length) {
+      stopSpeakingState();
       return;
     }
+
     const word = words[wordIndex];
-    const utteranceWord = new SpeechSynthesisUtterance(word);
-    utteranceWord.lang = "en-US";
-    utteranceWord.rate = 0.8;
-    utteranceWord.onstart = function () {
+    const wordUtterance = new SpeechSynthesisUtterance(word);
+    wordUtterance.lang = detectLanguage(word);
+    wordUtterance.rate = 0.8;
+    wordUtterance.onstart = function () {
       isSpeaking = true;
       updateSpeakingUI();
     };
-    utteranceWord.onend = function () {
+    wordUtterance.onend = function () {
       wordIndex++;
       setTimeout(speakNextWord, 500);
     };
-    speechSynthesis.speak(utteranceWord);
+    wordUtterance.onerror = function () {
+      sequenceCancelled = true;
+      stopSpeakingState();
+    };
+    speechSynthesis.speak(wordUtterance);
   }
+
   speechSynthesis.cancel();
-  isSpeaking = true;
-  updateSpeakingUI();
+  stopSpeakingState();
   speakNextWord();
 }
+
 speakScrambledCheckbox.addEventListener("change", function () {
   if (this.checked) {
     speakScrambledWithPauses();
   } else {
     speechSynthesis.cancel();
-    isSpeaking = false;
-    updateSpeakingUI();
+    stopSpeakingState();
   }
 });
+
 function seqRange(input) {
   let seq = input.split("-")[0];
   seq = seq.split(",").map(Number);
@@ -156,6 +218,7 @@ function seqRange(input) {
   const combined = [...seq, ...rnge];
   return [...new Set(combined)];
 }
+
 function lookupText(txt) {
   const numScripts = [];
   const re = new RegExp(`\\b${txt}\\b`);
@@ -170,14 +233,17 @@ function lookupText(txt) {
   }
   return numScripts;
 }
+
 function buildDefaultNav() {
   navIndices = Array.from({ length: Sentences.length }, (_, i) => i);
   navPos = currentAudioIndex;
   usePlayListMode = false;
 }
+
 function range(start, end) {
-  return Array.from({ length: end - start + 1 }, (_, i) => start + i);
+  return Array.from({ length: end - start + 1 }, (_, i) => i + start);
 }
+
 function parsePlayListInput(text) {
   const indices = [];
   const seen = new Set();
@@ -196,13 +262,11 @@ function parsePlayListInput(text) {
     return range(start - 1, end - 1);
   } else if (text.includes(",")) {
     var tokens = text.split(",").map((t) => t.trim()).filter(Boolean);
-
     tokens.forEach((tok) => {
       const n = parseInt(tok, 10);
       if (!Number.isFinite(n)) return;
       const idx = n - 1;
       if (idx < 0 || idx >= Sentences.length) return;
-
       if (!seen.has(idx)) {
         seen.add(idx);
         indices.push(idx);
@@ -213,8 +277,9 @@ function parsePlayListInput(text) {
     return lookupText(text.toLowerCase());
   }
 }
+
 function enablePlaylistMode() {
-  const indices = parsePlayListInput(playList.value);  
+  const indices = parsePlayListInput(playList.value);
   if (!indices || indices === "alert" || indices.length === 0) {
     usePlayListCheckbox.checked = false;
     alert("Playlist is empty or invalid. Enter numbers like: 1, 3, 5");
@@ -226,10 +291,12 @@ function enablePlaylistMode() {
   navPos = currentInList >= 0 ? currentInList : 0;
   displayData();
 }
+
 function disablePlaylistMode() {
   buildDefaultNav();
   displayData();
 }
+
 usePlayListCheckbox.addEventListener("change", function () {
   if (usePlayListCheckbox.checked) {
     enablePlaylistMode();
@@ -237,61 +304,36 @@ usePlayListCheckbox.addEventListener("change", function () {
     disablePlaylistMode();
   }
 });
+
 playList.addEventListener("keydown", function (e) {
   if (e.key === "Enter" && usePlayListCheckbox.checked) {
     enablePlaylistMode();
   }
 });
+
 speakEnglishBtn.addEventListener("click", function () {
   const s = Sentences[currentAudioIndex];
   if (s && s.english && s.english.trim()) {
-    const cleanedText = s.english.replace(/<br\s*\/?>/gi, " ");
-    utterance.text = cleanedText;
-    utterance.lang = "en-US";
-    speechSynthesis.cancel();
-    speechSynthesis.speak(utterance);
-    isSpeaking = true;
-    updateSpeakingUI();
-    utterance.onend = function () {
-      isSpeaking = false;
-      updateSpeakingUI();
-    };
+    speakText(s.english, "en-US");
   }
 });
+
 speakArabicBtn.addEventListener("click", function () {
   const s = Sentences[currentAudioIndex];
   if (s && s.arabic && s.arabic.trim()) {
-    const cleanedText = s.arabic.replace(/<br\s*\/?>/gi, " ");
-    utterance.text = cleanedText;
-    utterance.lang = "ar-SA";
-    speechSynthesis.cancel();
-    speechSynthesis.speak(utterance);
-    isSpeaking = true;
-    updateSpeakingUI();
-    utterance.onend = function () {
-      isSpeaking = false;
-      updateSpeakingUI();
-    };
+    speakText(s.arabic, "ar-SA");
   }
 });
+
 speakSelectionBtn.addEventListener("click", function () {
   const selectedText = window.getSelection().toString().trim();
   if (!selectedText) return;
-  utterance.text = selectedText;
-  utterance.lang = "en-US";
-  speechSynthesis.cancel();
-  speechSynthesis.speak(utterance);
-  isSpeaking = true;
-  updateSpeakingUI();
-  utterance.onend = function () {
-    isSpeaking = false;
-    updateSpeakingUI();
-  };
+  speakText(selectedText);
 });
+
 stopBtn.addEventListener("click", function () {
   speechSynthesis.cancel();
-  isSpeaking = false;
-  updateSpeakingUI();
+  stopSpeakingState();
 });
 
 function updateButtonState() {
@@ -369,43 +411,36 @@ function resetDetails() {
 function scrollToTop() {
   document.querySelector("main").scrollTo({ top: 0, behavior: "smooth" });
 }
+
 function playAudioOrSpeak() {
   const s = Sentences[currentAudioIndex];
 
-    if (!s.audio || s.audio.trim() === "") {
+  if (!s.audio || s.audio.trim() === "") {
+    const text = cleanSpeechText(s.english || s.arabic || "");
+    if (!text) return;
 
-    const cleanedText =
-      (s.english || "").replace(/<br\s*\/?>/gi, " ");
-
-    if (!cleanedText.trim()) return;
-
-    speechSynthesis.cancel();
-
-    const tts = new SpeechSynthesisUtterance(cleanedText);
-    tts.lang = "en-US";
+    const tts = new SpeechSynthesisUtterance(text);
+    tts.lang = detectLanguage(text);
     tts.rate = 0.9;
-
     tts.onstart = function () {
       isSpeaking = true;
       updateSpeakingUI();
     };
+    tts.onend = stopSpeakingState;
+    tts.onerror = stopSpeakingState;
 
-    tts.onend = function () {
-      isSpeaking = false;
-      updateSpeakingUI();
-    };
-
+    speechSynthesis.cancel();
+    stopSpeakingState();
     speechSynthesis.speak(tts);
     return;
   }
 
-  
   audio.play().catch(function () {});
 }
 
 function nextSentence() {
   speechSynthesis.cancel();
-  isSpeaking = false;
+  stopSpeakingState();
 
   if (navPos < navIndices.length - 1) {
     navPos++;
@@ -418,9 +453,10 @@ function nextSentence() {
     }
   }
 }
+
 function prevSentence() {
   speechSynthesis.cancel();
-  isSpeaking = false;
+  stopSpeakingState();
 
   if (navPos > 0) {
     navPos--;
@@ -445,7 +481,6 @@ document.getElementById("search").addEventListener("click", function () {
   }
 
   const idx = entered - 1;
-
   if (idx < 0 || idx >= Sentences.length) {
     alert("Enter a number between 1 and " + Sentences.length);
     return;
@@ -477,8 +512,10 @@ document.addEventListener("keydown", function (e) {
 });
 
 function updateSpeakingUI() {
-  if (isSpeaking) speakingIndicator.classList.add("active");
-  else speakingIndicator.classList.remove("active");
+  if (speakingIndicator) {
+    if (isSpeaking) speakingIndicator.classList.add("active");
+    else speakingIndicator.classList.remove("active");
+  }
 }
 
 let touchStartX = 0;
@@ -489,7 +526,6 @@ document.addEventListener("touchstart", function (e) {
 
 document.addEventListener("touchend", function (e) {
   const touchEndX = e.changedTouches[0].screenX;
-
   if (touchEndX < touchStartX - 50) nextSentence();
   if (touchEndX > touchStartX + 50) prevSentence();
 });
