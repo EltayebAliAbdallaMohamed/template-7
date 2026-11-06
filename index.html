@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>q3ese_ls0_u05_page 87</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body role="document">
+  <main role="main" aria-label="Lesson player interface">
+    <div id="fileSelector" class="file-selector">
+      <label for="jsonFileSelect"><strong>Select Lesson File:</strong></label>
+      <select id="jsonFileSelect" aria-label="Select a JSON lesson file">
+        <option value="">-- Choose a lesson --</option>
+        <option value="Q3eSE_LS0_U05_02_Listening1_ActivitiesA_D_E.json">Unit 5 - Let's find a new apartment.</option>
+        <option value="Q3eSE_LS0_U05_02_Listening1_ActivitiesA_D_E_vocab.json">Unit 5 - Page 78 - Vocabulary</option>
+      </select>
+    </div>
+    <h1 id="lessonTitle" aria-label="Lesson title"></h1>
+    <div id="speakingIndicator" class="speaking-indicator" role="status" aria-live="polite">
+      <span class="pulse">🔊</span> Speaking...
+    </div>
+    <section id="lessonMode">
+      <div class="left-panel">
+        <p id="speaker" aria-label="Speaker name"></p>
+        <p id="q" aria-live="polite"></p>
+        <p id="keyWords" aria-label="Keywords"></p>
+        <audio id="audio" controls aria-label="Audio player">Your browser does not support the audio element.</audio>
+        <input type="text" id="playList" inputmode="text" placeholder="Enter a word or numbers such as 1,2,3 or 5-10">
+        <label class="checkbox-row"><input type="checkbox" id="usePlayList">Use playlist</label>
+        <div class="controls" role="group" aria-label="Navigation controls">
+          <input type="number" id="audioIndex" inputmode="numeric" min="1" placeholder="#" aria-label="Enter clip number">
+          <button id="search">🔍</button>
+          <button id="prev">◀</button>
+          <button id="next">▶</button>
+          <label class="checkbox-row"><input type="checkbox" id="autoPlay">Auto Play</label>
+        </div>
+        <div class="tts-buttons" role="group" aria-label="Text to speech controls">
+          <button id="speakArabic">TTS-Arabic</button>
+          <button id="stop">Stop TTS</button>
+          <button id="speakSelection">TTS-Select</button>
+          <button id="speakEnglish">TTS-All</button>
+        </div>
+      </div>
+      <div class="right-panel">
+        <details id="englishDetails"><summary>English Script</summary><p id="english"></p></details>
+        <div id="scrambleCheckboxContainer">
+          <label id="scrambleCheckboxLabel"><input type="checkbox" id="scrambleCheckbox">Scramble Script</label>
+          <label id="speakScrambledLabel"><input type="checkbox" id="speakScrambledCheckbox">Speak Scrambled</label>
+        </div>
+        <p id="scrambledText"></p>
+        <details id="arabicDetails"><summary>Arabic Translation</summary><p id="arabic"></p></details>
+        <details id="answerDetails"><summary>Answer</summary><div id="answer"></div></details>
+        <details id="definition"><summary>Definition</summary><p id="def"></p></details>
+        <details id="illustrations" style="display:none;"><summary>Illustration</summary><img id="image" alt="Related illustration" style="display:none;"></details>
+        <div id="questionBasedOnAudio"></div>
+        <p id="refer_to_container"><strong>Refer to:</strong> <span id="refer_to"></span></p>
+        <p id="back_to_container"><strong>Back to:</strong> <span id="back_to"></span></p>
+      </div>
+    </section>
+    <hr>
+    <small>💡 Tip: Use ← / → keys or swipe left/right to navigate.</small>
+  </main>
+  <footer role="contentinfo">
+    <p>Created by: <span>Eltayeb Ali Abdalla Mohamed - King Saud University</span> | <span>© 2025 - All rights reserved</span></p>
+  </footer>
+  <script src="script.js"></script>
+</body>
+</html>

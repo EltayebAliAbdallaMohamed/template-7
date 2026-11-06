@@ -1,0 +1,112 @@
+
+:root{
+  --primary:#0078d4;
+  --primary-dark:#005ea6;
+  --bg:#f4f6f9;
+  --card:#ffffff;
+  --border:#d8dee6;
+  --shadow:0 2px 8px rgba(0,0,0,.08);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family:Segoe UI,Tahoma,sans-serif;
+  background:var(--bg);
+  color:#333;
+  line-height:1.3;
+  padding:2px;
+}
+main{
+  width:100%;
+  background:#fff;
+  padding:.35rem;
+  border-radius:6px;
+  box-shadow:var(--shadow);
+}
+.file-selector{
+  display:flex;
+  flex-direction:column;
+  gap:.25rem;
+  padding:.4rem;
+  border:2px solid var(--primary);
+  border-radius:6px;
+  background:#e8f4f8;
+}
+#lessonTitle{
+  margin:.35rem 0;
+  padding:.45rem;
+  background:var(--primary);
+  color:#fff;
+  text-align:center;
+  border-radius:6px;
+  font-size:1rem;
+}
+input,select,button{font-size:.9rem}
+input[type=text],input[type=number],select{
+  width:100%;padding:7px;border:2px solid var(--primary);border-radius:6px;
+}
+button{
+  min-height:38px;
+  padding:.35rem;
+  border:2px solid var(--primary);
+  border-radius:6px;
+  background:#fff;
+  color:var(--primary);
+  font-weight:600;
+}
+#lessonMode{display:flex;flex-direction:column;gap:.4rem}
+.left-panel,.right-panel{display:flex;flex-direction:column;gap:.4rem}
+.left-panel{
+  position:sticky;
+  top:0;
+  z-index:100;
+  background:#fff;
+}
+#speaker,#keyWords{text-align:center}
+#keyWords{color:var(--primary);font-size:.95rem}
+#q{
+  background:var(--primary);
+  color:#fff;
+  text-align:center;
+  padding:.35rem;
+  border-radius:6px;
+}
+audio{width:100%;height:34px}
+.controls{
+  display:grid;
+  grid-template-columns:60px 1fr 1fr 1fr;
+  gap:.25rem;
+}
+.tts-buttons{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:.25rem;
+}
+details{
+  border:1px solid var(--border);
+  border-radius:6px;
+  overflow:hidden;
+}
+summary{
+  padding:.45rem;
+  font-weight:700;
+  background:#f7f9fb;
+}
+#english,#arabic,#scrambledText,#def,#answer{padding:.5rem}
+#arabic{direction:rtl;text-align:right;background:#fff8e1}
+#english{background:#f0f8ff}
+#image{width:100%;max-width:100%}
+.checkbox-row{display:flex;align-items:center;gap:.25rem}
+#scrambleCheckboxContainer{display:flex;flex-direction:column;gap:.3rem}
+footer{text-align:center;padding:.4rem;font-size:.75rem}
+@media (min-width:768px){
+  body{padding:.5rem}
+  main{padding:.75rem}
+  .file-selector{flex-direction:row;align-items:center}
+  .tts-buttons{grid-template-columns:repeat(4,1fr)}
+}
+@media (min-width:1024px){
+  #lessonMode{display:grid;grid-template-columns:300px 1fr;gap:1rem}
+}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.pulse{animation:pulse 1s infinite}
